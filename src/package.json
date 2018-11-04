@@ -1,0 +1,31 @@
+{
+  "name": "mws-restaurant-stage-3",
+  "version": "1.0.0",
+  "description": "restaurant reviews project",
+  "main": "",
+  "scripts": {
+    "dev": "python -m SimpleHTTPServer",
+    "sass": "sass --watch sass/styles.scss:sass/styles.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mar-bi/mws-restaurant-stage-3.git"
+  },
+  "keywords": [
+    "responsive design",
+    "responsive images",
+    "a11y",
+    "performance",
+    "progressive web app",
+    "restaurant reviews app"
+  ],
+  "author": "Marina Biletska",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mar-bi/mws-restaurant-stage-3/issues"
+  },
+  "homepage": "https://github.com/mar-bi/mws-restaurant-stage-3#readme",
+  "devDependencies": {
+    "eslint": "^5.8.0"
+  }
+}
