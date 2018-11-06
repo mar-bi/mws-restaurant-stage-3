@@ -279,7 +279,12 @@ const submitNewReview = (event) => {
       },
       body: JSON.stringify(payload)
     }).then(res => res.json())
-      .then(response => console.log('Success:', JSON.stringify(response)))
+      .then(response => {
+        console.log('Success:', JSON.stringify(response));
+        nameInput.value = '';
+        ratingInput.value = 1;
+        commentsInput.value = '';
+      })
       .catch(error => console.error('Error:', error));
   }
 };
