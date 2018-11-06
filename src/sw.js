@@ -74,7 +74,7 @@ self.addEventListener('fetch', event => {
   if (requestUrl.pathname === '/restaurant.html') {
     event.respondWith(
       caches.match('restaurant.html').then(response => {
-        return response || fetch(eventRequest);
+        return response || fetch(event.request);
       })
     );
     return;
