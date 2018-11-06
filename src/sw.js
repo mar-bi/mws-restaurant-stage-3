@@ -80,7 +80,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  //serve JSON with restaurants data
+  //serve restaurants data
   if (
     requestUrl.host === 'localhost:1337' &&
     requestUrl.pathname === '/restaurants'
@@ -89,13 +89,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // serve reviews
   if (
     requestUrl.host === 'localhost:1337' &&
     requestUrl.pathname.startsWith('/reviews')
   ) {
-    const id = requestUrl.searchParams.get('restaurant_id');
-    event.respondWith(serveReviews(event.request, 'reviews-data', id));
-    return;
+    if (event.request.method === 'GET') {
+      const id = requestUrl.searchParams.get('restaurant_id');
+      event.respondWith(serveReviews(event.request, 'reviews-data', id));
+      return;
+    }
   }
 
   event.respondWith(

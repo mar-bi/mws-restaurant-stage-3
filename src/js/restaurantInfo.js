@@ -7,6 +7,7 @@ var newMap;
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   initRestaurantMap();
+  addFormSubmitListener();
 });
 
 /**
@@ -251,4 +252,42 @@ const formatDate = timestamp => {
   const month = date.getMonth();
   const year = date.getFullYear();
   return `${months[month]} ${day}, ${year}`;
+};
+
+/**
+ * Submit a new restaurant review
+ */
+const submitNewReview = (event) => {
+  event.preventDefault();
+  const nameInput = document.querySelector('#form-name');
+  const ratingInput = document.querySelector('#form-rating');
+  const commentsInput = document.querySelector('#form-comments');
+  const payload = {
+    'restaurant_id': self.restaurant.id,
+    'name': nameInput.value.trim(),
+    'rating': Number(ratingInput.value),
+    'comments': commentsInput.value.trim()
+  };
+  // console.log('PAYLOAD', payload);
+
+  if(payload.name && payload.rating && payload.comments) {
+    const url = 'http://localhost:1337/reviews/';
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify(payload)
+    }).then(res => res.json())
+      .then(response => console.log('Success:', JSON.stringify(response)))
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
+ * Listen for the review form submission
+ */
+const addFormSubmitListener = () => {
+  const reviewForm = document.querySelector('#user-review-form');
+  reviewForm.addEventListener('submit', submitNewReview);
 };
