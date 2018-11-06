@@ -236,7 +236,7 @@ section {
   box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
 }
 
-.filter-select-option {
+.filter-select-option, .form-rating-option {
   padding: 1rem 0;
   margin: 0.25rem 0;
 }
@@ -306,7 +306,7 @@ section {
   height: 48px;
 }
 
-.restaurant-link {
+.restaurant-link, .form-submit {
   display: block;
   background-color: orange;
   border-radius: 2px;
@@ -320,14 +320,14 @@ section {
   box-shadow: 3px 3px #aaa;
   transition: transform 0.2s ease;
 }
-.restaurant-link:active {
+.restaurant-link:active, .form-submit:active {
   transform: translateY(3px);
 }
-.restaurant-link:focus {
+.restaurant-link:focus, .form-submit:focus {
   outline: 2px dotted #3397db;
   box-shadow: 0 0 3px 6px #5eade3;
 }
-.restaurant-link:hover {
+.restaurant-link:hover, .form-submit:hover {
   background-color: #185d8c;
   color: #fff;
 }
@@ -393,7 +393,7 @@ section {
 }
 
 /* =================== Restaurant Details ==================== */
-.restaurant-container, .reviews-container {
+.restaurant-container, .reviews-container, .form-container {
   box-sizing: border-box;
   border-bottom: 1px solid #d9d9d9;
   border-top: 1px solid #fff;
@@ -401,7 +401,7 @@ section {
   width: 100%;
 }
 @media screen and (min-width: 400px) {
-  .restaurant-container, .reviews-container {
+  .restaurant-container, .reviews-container, .form-container {
     padding: 140px 32px 30px;
   }
 }
@@ -470,16 +470,16 @@ section {
 }
 
 /* =========================== Reviews ======================= */
-.reviews-container {
+.reviews-container, .form-container {
   padding: 2rem 1.5rem;
 }
 @media screen and (min-width: 400px) {
-  .reviews-container {
+  .reviews-container, .form-container {
     padding: 2rem;
   }
 }
 
-.reviews-title {
+.reviews-title, .user-review-title {
   color: #c75000;
   font-size: 1.65em;
   font-weight: 300;
@@ -522,6 +522,57 @@ section {
 }
 .reviews-text:nth-of-type(3) {
   font-weight: 600;
+}
+
+/*===========================User Reviews======================*/
+.form-container {
+  margin-bottom: 4.45em;
+}
+
+.user-review-title {
+  margin-bottom: 0.25em;
+}
+
+.user-review-form {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  padding: 1em;
+}
+
+.form-label {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+
+.form-username-input, .form-usertext, .form-rating-select {
+  display: block;
+  width: 95%;
+  border: 1px solid #c75000;
+  border-radius: 2px;
+  color: #333;
+  font-size: 1em;
+  padding: 0.5em 0.25em;
+  margin: 0.25em 0;
+}
+.form-username-input:focus, .form-usertext:focus, .form-rating-select:focus {
+  outline: 2px dotted #3397db;
+  box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+}
+
+.form-rating-select {
+  width: 45%;
+  background-color: #fff;
+}
+
+.star-icon {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.form-submit {
+  width: 50%;
+  align-self: center;
 }
 
 /*# sourceMappingURL=styles.css.map */

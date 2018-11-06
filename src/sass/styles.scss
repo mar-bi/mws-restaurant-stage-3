@@ -509,3 +509,66 @@ section {
     font-weight: 600;
   }
 }
+
+/*===========================User Reviews======================*/
+.form-container {
+  @extend .reviews-container;
+  margin-bottom: 4.45em;
+}
+
+.user-review-title {
+  @extend .reviews-title;
+  margin-bottom: 0.25em;
+}
+
+.user-review-form {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  padding: 1em;
+}
+
+.form-label {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+
+.form-username-input {
+  display: block;
+  width: 95%;
+  border: 1px solid $orange_title;
+  border-radius: 2px;
+  color: $text_color;
+  font-size: 1em;
+  padding: 0.5em 0.25em;
+  margin: 0.25em 0;
+  &:focus {
+    outline: 2px dotted $blue;
+    box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.form-rating-select {
+  @extend .form-username-input;
+  width: 45%;
+  background-color: $white;
+}
+
+.form-rating-option {
+  @extend .filter-select-option;
+}
+
+.form-usertext {
+  @extend .form-username-input;
+}
+
+.star-icon {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.form-submit {
+  @extend .restaurant-link;
+  width: 50%;
+  align-self: center;
+}
