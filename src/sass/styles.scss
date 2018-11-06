@@ -538,9 +538,10 @@ section {
   width: 95%;
   border: 1px solid $orange_title;
   border-radius: 2px;
+  font: 16px/1.5 Arial, Helvetica, sans-serif;
   color: $text_color;
   font-size: 1em;
-  padding: 0.5em 0.25em;
+  padding: 0.5em;
   margin: 0.25em 0;
   &:focus {
     outline: 2px dotted $blue;

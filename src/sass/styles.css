@@ -550,9 +550,10 @@ section {
   width: 95%;
   border: 1px solid #c75000;
   border-radius: 2px;
+  font: 16px/1.5 Arial, Helvetica, sans-serif;
   color: #333;
   font-size: 1em;
-  padding: 0.5em 0.25em;
+  padding: 0.5em;
   margin: 0.25em 0;
 }
 .form-username-input:focus, .form-usertext:focus, .form-rating-select:focus {
