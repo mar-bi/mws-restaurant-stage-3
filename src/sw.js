@@ -81,8 +81,20 @@ self.addEventListener('fetch', event => {
   }
 
   //serve JSON with restaurants data
-  if (requestUrl.host === 'localhost:1337') {
-    event.respondWith(serveJSON(event.request));
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname === '/restaurants'
+  ) {
+    event.respondWith(serveRestaurants(event.request, 'restaurants-data'));
+    return;
+  }
+
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname.startsWith('/reviews')
+  ) {
+    const id = requestUrl.searchParams.get('restaurant_id');
+    event.respondWith(serveReviews(event.request, 'reviews-data', id));
     return;
   }
 
@@ -123,49 +135,84 @@ function serveImgAssets(cacheName, eventRequest) {
 
 function createAppDB() {
   return (DBPromise = idb.open('mws-restaurants', 1, function(upgradeDB) {
-    upgradeDB.createObjectStore('all-restaurants', { keyPath: 'id' });
+    upgradeDB.createObjectStore('restaurants-data', { keyPath: 'id' });
+    upgradeDB.createObjectStore('reviews-data');
   }));
 }
 
-function writeAppDB(dataObj) {
+function writeAppDB(dataObj, objStore) {
   DBPromise.then(db => {
-    const tx = db.transaction('all-restaurants', 'readwrite');
-    const store = tx.objectStore('all-restaurants');
-    store.put({
-      id: 1,
-      data: dataObj
-    });
+    const tx = db.transaction(objStore, 'readwrite');
+    const store = tx.objectStore(objStore);
+    if (objStore === 'reviews-data') {
+      const key = dataObj[0].restaurant_id;
+      store.put(dataObj, key);
+    } else {
+      dataObj.forEach(item => {
+        store.put(item);
+      });
+    }
     return tx.complete;
   }).catch(err => console.log(err));
 }
 
-function readAppDB() {
+function readRestaurantsFromDB(objStore) {
   return DBPromise.then(db => {
     return db
-      .transaction('all-restaurants')
-      .objectStore('all-restaurants')
+      .transaction(objStore)
+      .objectStore(objStore)
       .getAll();
   });
 }
 
-async function serveJSON(eventRequest) {
-  const dbData = await readAppDB();
-  const restaurants = dbData.length === 0 ? null : dbData[0].data;
+function readReviewsFromDB(objStore, id) {
+  return DBPromise.then(db => {
+    return db
+      .transaction(objStore)
+      .objectStore(objStore)
+      .get(id);
+  });
+}
+
+async function serveRestaurants(eventRequest, objectStore) {
+  const dbData = await readRestaurantsFromDB(objectStore);
+  const restaurants = dbData.length === 0 ? null : dbData;
   let fetchResponse;
 
   if (restaurants) {
-    console.log('restaurants from db', restaurants);
+    // console.log('restaurants from db', restaurants);
     return wrapIntoResponse(restaurants);
   }
 
   try {
     fetchResponse = await fetch(eventRequest);
     const jsonResponse = await fetchResponse.clone().json();
-    writeAppDB(jsonResponse);
+    writeAppDB(jsonResponse, objectStore);
 
     return fetchResponse;
   } catch (err) {
-    console.log('Fetch error: ', err);
+    console.error('Fetch error: ', err);
+  }
+}
+
+async function serveReviews(eventRequest, objectStore, id) {
+  const dbData = await readReviewsFromDB(objectStore, id);
+  const reviews = dbData && dbData.length === 0 ? null : dbData;
+  let fetchResponse;
+
+  if (reviews) {
+    // console.log('restaurants from db', reviews);
+    return wrapIntoResponse(reviews);
+  }
+
+  try {
+    fetchResponse = await fetch(eventRequest);
+    const jsonResponse = await fetchResponse.clone().json();
+    writeAppDB(jsonResponse, objectStore);
+
+    return fetchResponse;
+  } catch (err) {
+    console.error('Fetch error: ', err);
   }
 }
 

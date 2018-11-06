@@ -42,7 +42,6 @@ const initRestaurantMap = () => {
   });
 };
 
-
 /**
  * Get current restaurant from page URL.
  */
@@ -58,15 +57,21 @@ const fetchRestaurantFromURL = callback => {
     const error = 'No restaurant id in URL';
     callback(error, null);
   } else {
-    DBHelper.fetchRestaurantById(id, (error, restaurant) => {
-      self.restaurant = restaurant;
-      if (!restaurant) {
-        console.error(error);
-        return;
-      }
-      fillRestaurantHTML();
-      callback(null, restaurant);
-    });
+    Promise.all([
+      DBHelper.fetchRestaurantById(id),
+      DBHelper.fetchRestaurantReviews(id)
+    ])
+      .then(res => {
+        const [restaurant, reviews] = res;
+        // console.log('Restaurants', restaurant, reviews);
+        restaurant.reviews = reviews;
+        self.restaurant = restaurant;
+        fillRestaurantHTML();
+        callback(null, restaurant);
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 };
 
@@ -158,7 +163,7 @@ const createReviewHTML = review => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = formatDate(review.updatedAt);
   date.className = 'reviews-text';
   li.appendChild(date);
 
@@ -221,4 +226,29 @@ const registerServiceWorker = () => {
         console.log(err);
       });
   }
+};
+
+/**
+ *  Format timestamp into human-readable date
+ */
+const formatDate = timestamp => {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
+  const date = new Date(timestamp);
+  const day = date.getDate();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  return `${months[month]} ${day}, ${year}`;
 };
