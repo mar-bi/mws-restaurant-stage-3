@@ -267,6 +267,15 @@ const formatDate = timestamp => {
 };
 
 /**
+ * Add user review to the restaurant page
+ */
+const addUserReview = (review) => {
+  const ul = document.getElementById('reviews-list');
+  ul.appendChild(createReviewHTML(review));
+};
+
+
+/**
  * Submit a new restaurant review
  */
 const submitNewReview = (event) => {
@@ -291,7 +300,7 @@ const submitNewReview = (event) => {
       body: JSON.stringify(payload)
     }).then(res => res.json())
       .then(response => {
-        console.log('Success:', JSON.stringify(response));
+        addUserReview(response);
         nameInput.value = '';
         ratingInput.value = 1;
         commentsInput.value = '';

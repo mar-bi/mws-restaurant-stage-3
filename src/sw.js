@@ -89,7 +89,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // serve reviews
+  // serve & add reviews
   if (
     requestUrl.host === 'localhost:1337' &&
     requestUrl.pathname.startsWith('/reviews')
@@ -97,6 +97,12 @@ self.addEventListener('fetch', event => {
     if (event.request.method === 'GET') {
       const id = requestUrl.searchParams.get('restaurant_id');
       event.respondWith(serveReviews(event.request, 'reviews-data', id));
+      return;
+    }
+
+    if (event.request.method === 'POST') {
+      const id = requestUrl.searchParams.get('restaurant_id');
+      event.respondWith(addReview(event.request));
       return;
     }
   }
@@ -193,7 +199,7 @@ async function serveRestaurants(eventRequest, objectStore) {
   let fetchResponse;
 
   if (restaurants) {
-    console.log('restaurants from db', restaurants);
+    // console.log('restaurants from db', restaurants);
     return wrapIntoResponse(restaurants);
   }
 
@@ -240,6 +246,17 @@ async function updateFavorite(eventRequest) {
   }
 }
 
+async function addReview(eventRequest) {
+  try {
+    const response = await fetch(eventRequest);
+    const jsonResponse = await response.clone().json();
+    updateReviews(jsonResponse);
+    return response;
+  } catch (err) {
+    console.error('Fetch error: ', err);
+  }
+}
+
 function wrapIntoResponse(dbObject) {
   const blob = new Blob([JSON.stringify(dbObject)], {
     type: 'application/json'
@@ -248,7 +265,6 @@ function wrapIntoResponse(dbObject) {
   return new Response(blob, init);
 }
 
-// check
 function updateRestaurant(restaurant) {
   DBPromise.then(db => {
     const tx = db.transaction('restaurants-data', 'readwrite');
@@ -258,15 +274,14 @@ function updateRestaurant(restaurant) {
   }).catch(err => console.log(err));
 }
 
-// // check
-// function addReview(review) {
-//   DBPromise.then(db => {
-//     const tx = db.transaction('reviews-data', 'readwrite');
-//     const store = tx.objectStore('reviews-data');
-//     const key = review.restaurant_id;
-//     const reviews = store.get(key);
-//     reviews.push(review);
-//     store.put(reviews, key);
-//     return tx.complete;
-//   }).catch(err => console.log(err));
-// }
+function updateReviews(review) {
+  DBPromise.then(async db => {
+    const tx = db.transaction('reviews-data', 'readwrite');
+    const store = tx.objectStore('reviews-data');
+    const key = review.restaurant_id;
+    const reviews = await store.get(key);
+    const _reviews = [ ...reviews, review ];
+    store.put(_reviews, key);
+    return tx.complete;
+  }).catch(err => console.log(err));
+}
