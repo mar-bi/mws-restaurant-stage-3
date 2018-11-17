@@ -390,6 +390,8 @@ section {
 /* =================== Restaurant Details ==================== */
 .restaurant-container {
   box-sizing: border-box;
+  display: flex;
+  flex-flow: column nowrap;
   border-bottom: 1px solid #d9d9d9;
   border-top: 1px solid $white;
   padding: 140px 24px 30px;
@@ -404,7 +406,7 @@ section {
   font: 1.625em/1.1 Arial, sans-serif;
   font-weight: 200;
   letter-spacing: 0;
-  margin: 15px 0 30px;
+  margin: 15px 0 20px;
   text-transform: uppercase;
 }
 
@@ -536,7 +538,7 @@ section {
 .form-username-input {
   display: block;
   width: 95%;
-  border: 1px solid $orange_title;
+  border: 1px solid lighten($orange_title, 15%);
   border-radius: 2px;
   font: 16px/1.5 Arial, Helvetica, sans-serif;
   color: $text_color;
@@ -572,4 +574,42 @@ section {
   @extend .restaurant-link;
   width: 50%;
   align-self: center;
+}
+
+/* Favorite buttons & sign */
+.favorite-buttons-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+}
+
+.favorite-button {
+  min-width: 125px;
+  border: 2px solid lighten($orange_title, 15%);
+  border-radius: 3px;
+  background-color: $white_background;
+  color: $text_color;
+  font-size: 0.9em;
+  padding: 0.5em;
+  margin-right: 1em;
+  align-self: center;
+  transition: all 2s;
+  &:hover, &:active {
+    border-color: $blue;
+    color: $orange_title;
+  }
+  &:focus {
+    outline: 2px dotted $blue;
+    box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.favorite-sign-restaurant {
+  color: $blue;
+  font-size: 0.95em;
+  vertical-align: super;
+}
+
+.hide-favorite {
+  display: none;
 }

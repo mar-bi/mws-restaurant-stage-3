@@ -395,6 +395,8 @@ section {
 /* =================== Restaurant Details ==================== */
 .restaurant-container, .reviews-container, .form-container {
   box-sizing: border-box;
+  display: flex;
+  flex-flow: column nowrap;
   border-bottom: 1px solid #d9d9d9;
   border-top: 1px solid #fff;
   padding: 140px 24px 30px;
@@ -411,7 +413,7 @@ section {
   font: 1.625em/1.1 Arial, sans-serif;
   font-weight: 200;
   letter-spacing: 0;
-  margin: 15px 0 30px;
+  margin: 15px 0 20px;
   text-transform: uppercase;
 }
 
@@ -548,7 +550,7 @@ section {
 .form-username-input, .form-usertext, .form-rating-select {
   display: block;
   width: 95%;
-  border: 1px solid #c75000;
+  border: 1px solid #ff7315;
   border-radius: 2px;
   font: 16px/1.5 Arial, Helvetica, sans-serif;
   color: #333;
@@ -574,6 +576,44 @@ section {
 .form-submit {
   width: 50%;
   align-self: center;
+}
+
+/* Favorite buttons & sign */
+.favorite-buttons-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+}
+
+.favorite-button {
+  min-width: 125px;
+  border: 2px solid #ff7315;
+  border-radius: 3px;
+  background-color: #f3f3f3;
+  color: #333;
+  font-size: 0.9em;
+  padding: 0.5em;
+  margin-right: 1em;
+  align-self: center;
+  transition: all 2s;
+}
+.favorite-button:hover, .favorite-button:active {
+  border-color: #3397db;
+  color: #c75000;
+}
+.favorite-button:focus {
+  outline: 2px dotted #3397db;
+  box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+}
+
+.favorite-sign-restaurant {
+  color: #3397db;
+  font-size: 0.95em;
+  vertical-align: super;
+}
+
+.hide-favorite {
+  display: none;
 }
 
 /*# sourceMappingURL=styles.css.map */

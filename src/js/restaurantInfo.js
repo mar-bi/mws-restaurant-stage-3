@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   initRestaurantMap();
   addFormSubmitListener();
+  addFavoriteListener();
+  addRemoveFavoriteListener();
 });
 
 /**
@@ -80,8 +82,18 @@ const fetchRestaurantFromURL = callback => {
  * Create restaurant HTML and add it to the webpage
  */
 const fillRestaurantHTML = (restaurant = self.restaurant) => {
+  const isFavorite = restaurant.is_favorite;
+  const favoriteSign = document.createElement('span');
+  favoriteSign.className = 'favorite-sign-restaurant';
+  if (isFavorite === 'false' || isFavorite === false) {
+    favoriteSign.className += ' hide-favorite';
+  }
+  favoriteSign.setAttribute('id', `fav-icon-${restaurant.id}`);
+  favoriteSign.innerHTML = '♥';
+
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name;
+  name.appendChild(favoriteSign);
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address;
@@ -224,7 +236,7 @@ const registerServiceWorker = () => {
         );
       })
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
   }
 };
@@ -268,7 +280,6 @@ const submitNewReview = (event) => {
     'rating': Number(ratingInput.value),
     'comments': commentsInput.value.trim()
   };
-  // console.log('PAYLOAD', payload);
 
   if(payload.name && payload.rating && payload.comments) {
     const url = 'http://localhost:1337/reviews/';
@@ -290,9 +301,71 @@ const submitNewReview = (event) => {
 };
 
 /**
+ * Toggle a favorite icon after the restaurant name
+ */
+const toggleFavIcon = (id, actionString) => {
+  const favSpan = document.querySelector(`#fav-icon-${id}`);
+  return actionString === 'show'
+    ? favSpan.classList.remove('hide-favorite')
+    : favSpan.classList.add('hide-favorite');
+};
+
+/**
+ * Make restaurant favorite
+ */
+const makeFavorite = (event, restaurant = self.restaurant) => {
+  const { id } = restaurant;
+  if (id) {
+    const url = `http://localhost:1337/restaurants/${id}/?is_favorite=true`;
+    fetch(url, { method: 'PUT'})
+      .then(res => res.json())
+      .then(response => {
+        const { id } = response;
+        toggleFavIcon(id, 'show');
+      })
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
+ * Make restaurant favorite
+ */
+const removeFavorite = (event, restaurant = self.restaurant) => {
+  const { id } = restaurant;
+  if (id) {
+    const url = `http://localhost:1337/restaurants/${id}/?is_favorite=false`;
+    fetch(url, { method: 'PUT'})
+      .then(res => res.json())
+      .then(response => {
+        const { id } = response;
+        toggleFavIcon(id, 'hide');
+      })
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
  * Listen for the review form submission
  */
 const addFormSubmitListener = () => {
   const reviewForm = document.querySelector('#user-review-form');
   reviewForm.addEventListener('submit', submitNewReview);
 };
+
+/**
+ * Listen for click on favorite button
+ */
+const addFavoriteListener = () => {
+  const favButton = document.querySelector('#make-favorite');
+  favButton.addEventListener('click', makeFavorite);
+};
+
+/**
+ * Listen for click on unfavorite button
+ */
+const addRemoveFavoriteListener = () => {
+  const unfavButton = document.querySelector('#make-unfavorite');
+  unfavButton.addEventListener('click', removeFavorite);
+};
+
+

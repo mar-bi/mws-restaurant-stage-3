@@ -55,7 +55,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
-  //cache map tiles and markers
+  // cache map tiles and markers
   if (
     requestUrl.origin.startsWith('https://api.tiles.mapbox.com') ||
     requestUrl.pathname.startsWith('/leaflet@1.3.1/dist/images/')
@@ -64,13 +64,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  //cache images
+  // cache images
   if (requestUrl.pathname.startsWith(`${REPO_PREFIX}images/`)) {
     event.respondWith(serveImgAssets(contentImagesCache, event.request));
     return;
   }
 
-  //serve a restaurant page
+  // serve a restaurant page
   if (requestUrl.pathname === '/restaurant.html') {
     event.respondWith(
       caches.match('restaurant.html').then(response => {
@@ -80,7 +80,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  //serve restaurants data
+  // serve restaurants data
   if (
     requestUrl.host === 'localhost:1337' &&
     requestUrl.pathname === '/restaurants'
@@ -99,6 +99,16 @@ self.addEventListener('fetch', event => {
       event.respondWith(serveReviews(event.request, 'reviews-data', id));
       return;
     }
+  }
+
+  // update favorite restaurants
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname.startsWith('/restaurants') &&
+    event.request.method === 'PUT'
+  ) {
+    event.respondWith(updateFavorite(event.request));
+    return;
   }
 
   event.respondWith(
@@ -183,7 +193,7 @@ async function serveRestaurants(eventRequest, objectStore) {
   let fetchResponse;
 
   if (restaurants) {
-    // console.log('restaurants from db', restaurants);
+    console.log('restaurants from db', restaurants);
     return wrapIntoResponse(restaurants);
   }
 
@@ -219,6 +229,17 @@ async function serveReviews(eventRequest, objectStore, id) {
   }
 }
 
+async function updateFavorite(eventRequest) {
+  try {
+    const response = await fetch(eventRequest);
+    const jsonResponse = await response.clone().json();
+    updateRestaurant(jsonResponse);
+    return response;
+  } catch (err) {
+    console.error('Fetch error: ', err);
+  }
+}
+
 function wrapIntoResponse(dbObject) {
   const blob = new Blob([JSON.stringify(dbObject)], {
     type: 'application/json'
@@ -226,3 +247,26 @@ function wrapIntoResponse(dbObject) {
   const init = { status: 200, statusText: 'Restaurants from DB' };
   return new Response(blob, init);
 }
+
+// check
+function updateRestaurant(restaurant) {
+  DBPromise.then(db => {
+    const tx = db.transaction('restaurants-data', 'readwrite');
+    const store = tx.objectStore('restaurants-data');
+    store.put(restaurant);
+    return tx.complete;
+  }).catch(err => console.log(err));
+}
+
+// // check
+// function addReview(review) {
+//   DBPromise.then(db => {
+//     const tx = db.transaction('reviews-data', 'readwrite');
+//     const store = tx.objectStore('reviews-data');
+//     const key = review.restaurant_id;
+//     const reviews = store.get(key);
+//     reviews.push(review);
+//     store.put(reviews, key);
+//     return tx.complete;
+//   }).catch(err => console.log(err));
+// }
