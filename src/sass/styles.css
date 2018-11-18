@@ -399,13 +399,12 @@ section {
   flex-flow: column nowrap;
   border-bottom: 1px solid #d9d9d9;
   border-top: 1px solid #fff;
-  padding: 140px 24px 30px;
+  padding: 175px 24px 30px;
   width: 100%;
-  margin-top: 1.5em;
 }
 @media screen and (min-width: 400px) {
   .restaurant-container, .reviews-container, .form-container {
-    padding: 140px 32px 30px;
+    padding: 175px 32px 30px;
   }
 }
 
@@ -617,11 +616,16 @@ section {
   display: none;
 }
 
+.show-alert {
+  background-color: #A80000;
+}
+
 .connection-alert {
-  font-weight: 400;
-  color: #A80000;
+  font-weight: bold;
+  color: #fff;
   text-align: center;
   margin: 1em 0;
+  padding: 0.25em;
 }
 
 /*# sourceMappingURL=styles.css.map */

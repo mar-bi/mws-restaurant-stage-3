@@ -387,9 +387,12 @@ const addRemoveFavoriteListener = () => {
  */
 const notifyUserAboutConnection = (message) => {
   const connectionStatus = document.querySelector('#connection-alert');
+  const alertContainer = document.querySelector('#alert-container');
   connectionStatus.innerHTML = message;
+  alertContainer.classList.add('show-alert');
   setTimeout(() => {
     connectionStatus.innerHTML = '';
+    alertContainer.classList.remove('show-alert');
   }, 4000);
 };
 
