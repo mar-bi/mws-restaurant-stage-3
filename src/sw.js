@@ -101,7 +101,6 @@ self.addEventListener('fetch', event => {
     }
 
     if (event.request.method === 'POST') {
-      const id = requestUrl.searchParams.get('restaurant_id');
       event.respondWith(addReview(event.request));
       return;
     }
@@ -247,13 +246,29 @@ async function updateFavorite(eventRequest) {
 }
 
 async function addReview(eventRequest) {
-  try {
-    const response = await fetch(eventRequest);
-    const jsonResponse = await response.clone().json();
-    updateReviews(jsonResponse);
-    return response;
-  } catch (err) {
-    console.error('Fetch error: ', err);
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(eventRequest);
+      const jsonResponse = await response.clone().json();
+      updateReviews(jsonResponse);
+      return response;
+    } catch (err) {
+      console.error('Fetch error: ', err);
+    }
+  } else {
+    // send message to clients
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client =>
+        client.postMessage({
+          msg: 'You are offline now! All your reviews will be sent later.'
+        })
+      )
+    });
+    // save review to db
+    const review = await eventRequest.json();
+    updateReviews(review);
+    return wrapIntoResponse(review);
   }
 }
 

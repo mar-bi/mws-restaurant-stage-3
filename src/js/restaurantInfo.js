@@ -7,10 +7,10 @@ var newMap;
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   initRestaurantMap();
+  addMessageListener();
   addFormSubmitListener();
   addFavoriteListener();
   addRemoveFavoriteListener();
-  addConnectionListeners();
 });
 
 /**
@@ -288,7 +288,10 @@ const submitNewReview = (event) => {
     'restaurant_id': self.restaurant.id,
     'name': nameInput.value.trim(),
     'rating': Number(ratingInput.value),
-    'comments': commentsInput.value.trim()
+    'comments': commentsInput.value.trim(),
+    'createdAt': new Date(),
+    'updatedAt': new Date(),
+    'id': Math.round(Math.random()*1000),
   };
 
   if(payload.name && payload.rating && payload.comments) {
@@ -301,6 +304,7 @@ const submitNewReview = (event) => {
       body: JSON.stringify(payload)
     }).then(res => res.json())
       .then(response => {
+        // console.log('server response', response);
         addUserReview(response);
         nameInput.value = '';
         ratingInput.value = 1;
@@ -363,7 +367,7 @@ const addFormSubmitListener = () => {
 };
 
 /**
- * Listen for click on favorite button
+ * Listen for click on a favorite button
  */
 const addFavoriteListener = () => {
   const favButton = document.querySelector('#make-favorite');
@@ -371,31 +375,30 @@ const addFavoriteListener = () => {
 };
 
 /**
- * Listen for click on unfavorite button
+ * Listen for click on an unfavorite button
  */
 const addRemoveFavoriteListener = () => {
   const unfavButton = document.querySelector('#make-unfavorite');
   unfavButton.addEventListener('click', removeFavorite);
 };
 
-const addConnectionListeners = () => {
-  window.addEventListener('offline', notifyUserAboutConnection);
-  window.addEventListener('online', notifyUserAboutConnection);
-};
-
 /**
  * Notify user about connection status
  */
-const notifyUserAboutConnection = (e) => {
-  console.log('Event', e);
+const notifyUserAboutConnection = (message) => {
   const connectionStatus = document.querySelector('#connection-alert');
-  console.log('Navigator status', navigator.onLine);
-  if (navigator.onLine){
-    connectionStatus.innerHTML = 'You are online now!';
-  } else {
-    connectionStatus.innerHTML = 'You are offline now! All your reviews will be sent.';
-  }
+  connectionStatus.innerHTML = message;
   setTimeout(() => {
     connectionStatus.innerHTML = '';
   }, 4000);
+};
+
+/**
+ * Listen for a message from a service worker
+ */
+const addMessageListener = () => {
+  navigator.serviceWorker.addEventListener('message', event => {
+    // console.log(event.data.msg);
+    notifyUserAboutConnection(event.data.msg);
+  });
 };
