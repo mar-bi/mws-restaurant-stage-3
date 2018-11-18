@@ -8,6 +8,7 @@ $orange_title: #c75000;
 $white_background: #f3f3f3;
 $gray_80: #ccc;
 $white: #fff;
+$alert: #A80000;
 
 //sizes
 $max_width: 1024px;
@@ -396,6 +397,7 @@ section {
   border-top: 1px solid $white;
   padding: 140px 24px 30px;
   width: 100%;
+  margin-top: 1.5em;
   @media screen and (min-width: 400px) {
     padding: 140px 32px 30px;
   }
@@ -612,4 +614,15 @@ section {
 
 .hide-favorite {
   display: none;
+}
+
+.alert-container {
+  @extend .nav-breadcrumb;
+}
+
+.connection-alert {
+  font-weight: 400;
+  color: $alert;
+  text-align: center;
+  margin: 1em 0;
 }

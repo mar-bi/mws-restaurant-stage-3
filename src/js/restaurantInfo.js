@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addFormSubmitListener();
   addFavoriteListener();
   addRemoveFavoriteListener();
+  addConnectionListeners();
 });
 
 /**
@@ -377,4 +378,24 @@ const addRemoveFavoriteListener = () => {
   unfavButton.addEventListener('click', removeFavorite);
 };
 
+const addConnectionListeners = () => {
+  window.addEventListener('offline', notifyUserAboutConnection);
+  window.addEventListener('online', notifyUserAboutConnection);
+};
 
+/**
+ * Notify user about connection status
+ */
+const notifyUserAboutConnection = (e) => {
+  console.log('Event', e);
+  const connectionStatus = document.querySelector('#connection-alert');
+  console.log('Navigator status', navigator.onLine);
+  if (navigator.onLine){
+    connectionStatus.innerHTML = 'You are online now!';
+  } else {
+    connectionStatus.innerHTML = 'You are offline now! All your reviews will be sent.';
+  }
+  setTimeout(() => {
+    connectionStatus.innerHTML = '';
+  }, 4000);
+};

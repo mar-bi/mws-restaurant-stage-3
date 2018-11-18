@@ -112,11 +112,11 @@ section {
 }
 
 /*====================== Breadcrumbs ========================= */
-.nav-breadcrumb {
+.nav-breadcrumb, .alert-container {
   width: 100%;
 }
 @media screen and (min-width: 700px) {
-  .nav-breadcrumb {
+  .nav-breadcrumb, .alert-container {
     width: 50%;
   }
 }
@@ -401,6 +401,7 @@ section {
   border-top: 1px solid #fff;
   padding: 140px 24px 30px;
   width: 100%;
+  margin-top: 1.5em;
 }
 @media screen and (min-width: 400px) {
   .restaurant-container, .reviews-container, .form-container {
@@ -614,6 +615,13 @@ section {
 
 .hide-favorite {
   display: none;
+}
+
+.connection-alert {
+  font-weight: 400;
+  color: #A80000;
+  text-align: center;
+  margin: 1em 0;
 }
 
 /*# sourceMappingURL=styles.css.map */
