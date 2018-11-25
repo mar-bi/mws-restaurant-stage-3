@@ -20,6 +20,8 @@ const URLS = [
   `${REPO_PREFIX}js/dbHelper.js`,
   `${REPO_PREFIX}js/restaurantInfo.js`,
   `${REPO_PREFIX}css/styles.css`,
+  `${REPO_PREFIX}sass/styles.css`, //!!! REMOVE LATER
+  `${REPO_PREFIX}manifest.json`,
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js'
 ];
@@ -47,6 +49,12 @@ self.addEventListener('activate', event => {
       await createAppDB();
     })()
   );
+});
+
+self.addEventListener('sync', event => {
+  if (event.tag === 'send-review') {
+    event.waitUntil(sendReviews());
+  }
 });
 
 /**
@@ -151,10 +159,13 @@ function serveImgAssets(cacheName, eventRequest) {
   });
 }
 
+// -------- IndexedDB manipulation methods ----------------------
+
 function createAppDB() {
   return (DBPromise = idb.open('mws-restaurants', 1, function(upgradeDB) {
     upgradeDB.createObjectStore('restaurants-data', { keyPath: 'id' });
     upgradeDB.createObjectStore('reviews-data');
+    upgradeDB.createObjectStore('offline-reviews');
   }));
 }
 
@@ -174,7 +185,7 @@ function writeAppDB(dataObj, objStore) {
   }).catch(err => console.log(err));
 }
 
-function readRestaurantsFromDB(objStore) {
+function readAllFromDB(objStore) {
   return DBPromise.then(db => {
     return db
       .transaction(objStore)
@@ -183,7 +194,7 @@ function readRestaurantsFromDB(objStore) {
   });
 }
 
-function readReviewsFromDB(objStore, id) {
+function readByIdFromDB(objStore, id) {
   return DBPromise.then(db => {
     return db
       .transaction(objStore)
@@ -192,8 +203,51 @@ function readReviewsFromDB(objStore, id) {
   });
 }
 
+function removeFromDb(objectStore, id) {
+  return DBPromise.then(db => {
+    const tx = db.transaction(objectStore, 'readwrite');
+    tx.objectStore(objectStore).delete(id);
+    return tx.complete;
+  });
+}
+
+function updateRestaurant(restaurant) {
+  DBPromise.then(db => {
+    const tx = db.transaction('restaurants-data', 'readwrite');
+    const store = tx.objectStore('restaurants-data');
+    store.put(restaurant);
+    return tx.complete;
+  }).catch(err => console.log(err));
+}
+
+function updateReviews(review) {
+  return DBPromise.then(async db => {
+    const tx = db.transaction('reviews-data', 'readwrite');
+    const reviewStore = tx.objectStore('reviews-data');
+    const key = review.restaurant_id;
+    const reviews = await reviewStore.get(key);
+    const _reviews = [ ...reviews, review ];
+    reviewStore.put(_reviews, key);
+    return tx.complete;
+  });
+  //.catch(err => console.log(err));
+}
+
+function addOfflineReview(review) {
+  return DBPromise.then(db => {
+    const tx = db.transaction('offline-reviews', 'readwrite');
+    const tempStore = tx.objectStore('offline-reviews');
+    const id = review.id;
+    tempStore.put(review, id);
+    return tx.complete;
+  });
+  // .catch(err => console.log(err));
+}
+
+// -------------------Helper functions ------------------------
+
 async function serveRestaurants(eventRequest, objectStore) {
-  const dbData = await readRestaurantsFromDB(objectStore);
+  const dbData = await readAllFromDB(objectStore);
   const restaurants = dbData.length === 0 ? null : dbData;
   let fetchResponse;
 
@@ -214,7 +268,7 @@ async function serveRestaurants(eventRequest, objectStore) {
 }
 
 async function serveReviews(eventRequest, objectStore, id) {
-  const dbData = await readReviewsFromDB(objectStore, id);
+  const dbData = await readByIdFromDB(objectStore, id);
   const reviews = dbData && dbData.length === 0 ? null : dbData;
   let fetchResponse;
 
@@ -245,31 +299,82 @@ async function updateFavorite(eventRequest) {
   }
 }
 
+// async function addReview(eventRequest) {
+//   const isOnline = navigator.onLine;
+//   if (isOnline) {
+//     try {
+//       const response = await fetch(eventRequest);
+//       const jsonResponse = await response.clone().json();
+//       updateReviews(jsonResponse);
+//       return response;
+//     } catch (err) {
+//       console.error('Fetch error: ', err);
+//     }
+//   } else {
+//     // send message to clients
+//     self.clients.matchAll().then(clients => {
+//       clients.forEach(client =>
+//         client.postMessage({
+//           msg: 'You are offline now! All your reviews will be sent later.'
+//         })
+//       )
+//     });
+//     // save review to db
+//     const review = await eventRequest.json();
+//     updateReviews(review);
+//     addOfflineReview(review);
+//     return wrapIntoResponse(review);
+//   }
+// }
+
 async function addReview(eventRequest) {
   const isOnline = navigator.onLine;
-  if (isOnline) {
-    try {
-      const response = await fetch(eventRequest);
-      const jsonResponse = await response.clone().json();
-      updateReviews(jsonResponse);
-      return response;
-    } catch (err) {
-      console.error('Fetch error: ', err);
-    }
-  } else {
-    // send message to clients
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client =>
-        client.postMessage({
-          msg: 'You are offline now! All your reviews will be sent later.'
-        })
-      )
-    });
-    // save review to db
+  try {
     const review = await eventRequest.json();
-    updateReviews(review);
+    await updateReviews(review);
+    await addOfflineReview(review);
+
+    if (!isOnline) {
+      // send message to clients
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client =>
+          client.postMessage({
+            msg: 'You are offline now! All your reviews will be sent later.'
+          })
+        )
+      });
+    }
+    self.registration.sync.register('send-review').then(() => {
+      console.log('send-review sync is registered');
+    });
     return wrapIntoResponse(review);
+  } catch(error) {
+    console.log('Error in adding review');
   }
+}
+
+async function sendReviews() {
+  const dbData = await readAllFromDB('offline-reviews');
+
+  if (dbData.length > 0) {
+    const url = 'http://localhost:1337/reviews/';
+    dbData.forEach(review => {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+        },
+        body: JSON.stringify(review)
+      })
+      .then(response => removeFromDb('offline-reviews', review.id))
+      .then(result => result)
+      .catch(error => {
+        console.error('Error in sendReview', error);
+        return Promise.reject();
+      });
+    });
+  }
+  return Promise.resolve();
 }
 
 function wrapIntoResponse(dbObject) {
@@ -278,25 +383,4 @@ function wrapIntoResponse(dbObject) {
   });
   const init = { status: 200, statusText: 'Restaurants from DB' };
   return new Response(blob, init);
-}
-
-function updateRestaurant(restaurant) {
-  DBPromise.then(db => {
-    const tx = db.transaction('restaurants-data', 'readwrite');
-    const store = tx.objectStore('restaurants-data');
-    store.put(restaurant);
-    return tx.complete;
-  }).catch(err => console.log(err));
-}
-
-function updateReviews(review) {
-  DBPromise.then(async db => {
-    const tx = db.transaction('reviews-data', 'readwrite');
-    const store = tx.objectStore('reviews-data');
-    const key = review.restaurant_id;
-    const reviews = await store.get(key);
-    const _reviews = [ ...reviews, review ];
-    store.put(_reviews, key);
-    return tx.complete;
-  }).catch(err => console.log(err));
 }

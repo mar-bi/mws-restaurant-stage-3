@@ -6,6 +6,7 @@ var newMap;
  */
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
+  // registerServiceWorkerSync();
   initRestaurantMap();
   addMessageListener();
   addFormSubmitListener();
@@ -401,7 +402,6 @@ const notifyUserAboutConnection = (message) => {
  */
 const addMessageListener = () => {
   navigator.serviceWorker.addEventListener('message', event => {
-    // console.log(event.data.msg);
     notifyUserAboutConnection(event.data.msg);
   });
 };
