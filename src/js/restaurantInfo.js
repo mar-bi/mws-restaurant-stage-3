@@ -1,4 +1,4 @@
-let restaurant;
+let restaurant; // eslint-disable-line
 var newMap;
 
 /**
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /**
  * Initialize leaflet map
  */
+/* eslint-disable */
 const initRestaurantMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) {
@@ -46,6 +47,7 @@ const initRestaurantMap = () => {
     }
   });
 };
+/* eslint-enable */
 
 /**
  * Get current restaurant from page URL.
@@ -63,14 +65,13 @@ const fetchRestaurantFromURL = callback => {
     callback(error, null);
   } else {
     Promise.all([
-      DBHelper.fetchRestaurantById(id),
-      DBHelper.fetchRestaurantReviews(id)
+      DBHelper.fetchRestaurantById(id), // eslint-disable-line
+      DBHelper.fetchRestaurantReviews(id) // eslint-disable-line
     ])
       .then(res => {
         const [restaurant, reviews] = res;
-        // console.log('Restaurants', restaurant, reviews);
-        restaurant.reviews = reviews;
-        self.restaurant = restaurant;
+        restaurant.reviews = Array.isArray(reviews) ? reviews : [];
+        self.restaurant = restaurant || {};
         fillRestaurantHTML();
         callback(null, restaurant);
       })
@@ -101,9 +102,9 @@ const fillRestaurantHTML = (restaurant = self.restaurant) => {
   address.innerHTML = restaurant.address;
 
   const image = document.getElementById('restaurant-img');
-  image.srcset = DBHelper.imageSrcsetWForRestaurant(restaurant);
+  image.srcset = DBHelper.imageSrcsetWForRestaurant(restaurant); // eslint-disable-line
   image.sizes = '(max-width: 699px) 270px, 400px';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.src = DBHelper.imageUrlForRestaurant(restaurant); // eslint-disable-line
   image.alt = `A photo of ${restaurant.name}`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
@@ -217,7 +218,7 @@ const fillBreadcrumb = (restaurant = self.restaurant) => {
  */
 const getParameterByName = (name, url) => {
   if (!url) url = window.location.href;
-  name = name.replace(/[\[\]]/g, '\\$&');
+  name = name.replace(/[\[\]]/g, '\\$&'); // eslint-disable-line
   const regex = new RegExp(`[?&]${name}(=([^&#]*)|&|#|$)`),
     results = regex.exec(url);
   if (!results) return null;
@@ -271,39 +272,39 @@ const formatDate = timestamp => {
 /**
  * Add user review to the restaurant page
  */
-const addUserReview = (review) => {
+const addUserReview = review => {
   const ul = document.getElementById('reviews-list');
   ul.appendChild(createReviewHTML(review));
 };
 
-
 /**
  * Submit a new restaurant review
  */
-const submitNewReview = (event) => {
+const submitNewReview = event => {
   event.preventDefault();
   const nameInput = document.querySelector('#form-name');
   const ratingInput = document.querySelector('#form-rating');
   const commentsInput = document.querySelector('#form-comments');
   const payload = {
-    'restaurant_id': self.restaurant.id,
-    'name': nameInput.value.trim(),
-    'rating': Number(ratingInput.value),
-    'comments': commentsInput.value.trim(),
-    'createdAt': new Date(),
-    'updatedAt': new Date(),
-    'id': Math.round(Math.random()*1000),
+    restaurant_id: self.restaurant.id,
+    name: nameInput.value.trim(),
+    rating: Number(ratingInput.value),
+    comments: commentsInput.value.trim(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    id: Math.round(Math.random() * 1000)
   };
 
-  if(payload.name && payload.rating && payload.comments) {
+  if (payload.name && payload.rating && payload.comments) {
     const url = 'http://localhost:1337/reviews/';
     fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Type': 'application/json; charset=utf-8'
       },
       body: JSON.stringify(payload)
-    }).then(res => res.json())
+    })
+      .then(res => res.json())
       .then(response => {
         // console.log('server response', response);
         addUserReview(response);
@@ -332,7 +333,7 @@ const makeFavorite = (event, restaurant = self.restaurant) => {
   const { id } = restaurant;
   if (id) {
     const url = `http://localhost:1337/restaurants/${id}/?is_favorite=true`;
-    fetch(url, { method: 'PUT'})
+    fetch(url, { method: 'PUT' })
       .then(res => res.json())
       .then(response => {
         const { id } = response;
@@ -349,7 +350,7 @@ const removeFavorite = (event, restaurant = self.restaurant) => {
   const { id } = restaurant;
   if (id) {
     const url = `http://localhost:1337/restaurants/${id}/?is_favorite=false`;
-    fetch(url, { method: 'PUT'})
+    fetch(url, { method: 'PUT' })
       .then(res => res.json())
       .then(response => {
         const { id } = response;
@@ -386,7 +387,7 @@ const addRemoveFavoriteListener = () => {
 /**
  * Notify user about connection status
  */
-const notifyUserAboutConnection = (message) => {
+const notifyUserAboutConnection = message => {
   const connectionStatus = document.querySelector('#connection-alert');
   const alertContainer = document.querySelector('#alert-container');
   connectionStatus.innerHTML = message;

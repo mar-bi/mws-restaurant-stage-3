@@ -150,10 +150,14 @@ function serveImgAssets(cacheName, eventRequest) {
     return cache.match(eventRequest).then(response => {
       return (
         response ||
-        fetch(eventRequest).then(response => {
-          cache.put(eventRequest, response.clone());
-          return response;
-        })
+        fetch(eventRequest)
+          .then(response => {
+            cache.put(eventRequest, response.clone());
+            return response;
+          })
+          .catch(err => {
+            console.error('ERROR IN SERVING IMG ASSETS', err);
+          })
       );
     });
   });
@@ -195,11 +199,12 @@ function readAllFromDB(objStore) {
 }
 
 function readByIdFromDB(objStore, id) {
-  return DBPromise.then(db => {
-    return db
-      .transaction(objStore)
-      .objectStore(objStore)
-      .get(id);
+  return DBPromise.then(async db => {
+    const tx = db.transaction(objStore);
+    const store = tx.objectStore(objStore);
+    const review = await store.get(Number.parseInt(id));
+    // console.log('REVIEW FROM IDB', review);
+    return review;
   });
 }
 
@@ -217,7 +222,7 @@ function updateRestaurant(restaurant) {
     const store = tx.objectStore('restaurants-data');
     store.put(restaurant);
     return tx.complete;
-  }).catch(err => console.log(err));
+  }).catch(err => console.error(err));
 }
 
 function updateReviews(review) {
@@ -226,11 +231,10 @@ function updateReviews(review) {
     const reviewStore = tx.objectStore('reviews-data');
     const key = review.restaurant_id;
     const reviews = await reviewStore.get(key);
-    const _reviews = [ ...reviews, review ];
+    const _reviews = [...reviews, review];
     reviewStore.put(_reviews, key);
     return tx.complete;
   });
-  //.catch(err => console.log(err));
 }
 
 function addOfflineReview(review) {
@@ -241,50 +245,51 @@ function addOfflineReview(review) {
     tempStore.put(review, id);
     return tx.complete;
   });
-  // .catch(err => console.log(err));
 }
 
 // -------------------Helper functions ------------------------
 
 async function serveRestaurants(eventRequest, objectStore) {
-  const dbData = await readAllFromDB(objectStore);
-  const restaurants = dbData.length === 0 ? null : dbData;
-  let fetchResponse;
-
-  if (restaurants) {
-    // console.log('restaurants from db', restaurants);
-    return wrapIntoResponse(restaurants);
-  }
-
   try {
+    const dbData = await readAllFromDB(objectStore);
+    const restaurants = dbData.length === 0 ? null : dbData;
+    let fetchResponse;
+
+    if (restaurants) {
+      // console.log('restaurants from db', restaurants);
+      return wrapIntoResponse(restaurants);
+    }
+
     fetchResponse = await fetch(eventRequest);
     const jsonResponse = await fetchResponse.clone().json();
     writeAppDB(jsonResponse, objectStore);
 
     return fetchResponse;
   } catch (err) {
-    console.error('Fetch error: ', err);
+    console.error('ERROR IN SERVE RESTAURANTS', err);
   }
 }
 
 async function serveReviews(eventRequest, objectStore, id) {
-  const dbData = await readByIdFromDB(objectStore, id);
-  const reviews = dbData && dbData.length === 0 ? null : dbData;
-  let fetchResponse;
-
-  if (reviews) {
-    // console.log('restaurants from db', reviews);
-    return wrapIntoResponse(reviews);
-  }
-
   try {
+    const dbData = await readByIdFromDB(objectStore, id);
+    // console.log('Reviews data', dbData);
+    const reviews = dbData && dbData.length === 0 ? null : dbData;
+
+    let fetchResponse;
+
+    if (reviews) {
+      // console.log('restaurants from db', reviews);
+      return wrapIntoResponse(reviews);
+    }
+
     fetchResponse = await fetch(eventRequest);
     const jsonResponse = await fetchResponse.clone().json();
     writeAppDB(jsonResponse, objectStore);
 
     return fetchResponse;
   } catch (err) {
-    console.error('Fetch error: ', err);
+    console.error('ERROR IN SERVE REVIEWS', err);
   }
 }
 
@@ -295,37 +300,9 @@ async function updateFavorite(eventRequest) {
     updateRestaurant(jsonResponse);
     return response;
   } catch (err) {
-    console.error('Fetch error: ', err);
+    console.error('ERROR IN UPDATE FAVORITE', err);
   }
 }
-
-// async function addReview(eventRequest) {
-//   const isOnline = navigator.onLine;
-//   if (isOnline) {
-//     try {
-//       const response = await fetch(eventRequest);
-//       const jsonResponse = await response.clone().json();
-//       updateReviews(jsonResponse);
-//       return response;
-//     } catch (err) {
-//       console.error('Fetch error: ', err);
-//     }
-//   } else {
-//     // send message to clients
-//     self.clients.matchAll().then(clients => {
-//       clients.forEach(client =>
-//         client.postMessage({
-//           msg: 'You are offline now! All your reviews will be sent later.'
-//         })
-//       )
-//     });
-//     // save review to db
-//     const review = await eventRequest.json();
-//     updateReviews(review);
-//     addOfflineReview(review);
-//     return wrapIntoResponse(review);
-//   }
-// }
 
 async function addReview(eventRequest) {
   const isOnline = navigator.onLine;
@@ -341,37 +318,46 @@ async function addReview(eventRequest) {
           client.postMessage({
             msg: 'You are offline now! All your reviews will be sent later.'
           })
-        )
+        );
       });
     }
     self.registration.sync.register('send-review').then(() => {
       console.log('send-review sync is registered');
     });
     return wrapIntoResponse(review);
-  } catch(error) {
-    console.log('Error in adding review');
+  } catch (err) {
+    console.error('ERROR IN ADD REVIEW', err);
   }
 }
 
 async function sendReviews() {
-  const dbData = await readAllFromDB('offline-reviews');
+  let dbData;
+  try {
+    dbData = await readAllFromDB('offline-reviews');
+    // console.log('Sending reviews', dbData);
+  } catch (err) {
+    console.error('ERROR IN READING REVIEWS FROM DB', err);
+  }
 
-  if (dbData.length > 0) {
+  if (dbData && dbData.length > 0) {
     const url = 'http://localhost:1337/reviews/';
     dbData.forEach(review => {
       fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Type': 'application/json; charset=utf-8'
         },
         body: JSON.stringify(review)
       })
-      .then(response => removeFromDb('offline-reviews', review.id))
-      .then(result => result)
-      .catch(error => {
-        console.error('Error in sendReview', error);
-        return Promise.reject();
-      });
+        .then(response => {
+          // console.log('Server.response', response.json());
+          return removeFromDb('offline-reviews', review.id);
+        })
+        .then(result => result)
+        .catch(err => {
+          console.error('ERROR IN SEND REVIEWS', err);
+          return Promise.reject();
+        });
     });
   }
   return Promise.resolve();

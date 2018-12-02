@@ -3,6 +3,7 @@ const SITE_PREFIX = '/';
 /**
  * Common database helper functions.
  */
+/* eslint-disable-next-line */
 class DBHelper {
   /**
    * Database URL.
@@ -146,7 +147,9 @@ class DBHelper {
     const url = `http://localhost:1337/reviews/?restaurant_id=${id}`;
     return fetch(url)
       .then(response => response.json())
-      .catch(err => err);
+      .catch(err => {
+        console.error('DB-HELPER: ERROR IN FETCH RESTAURANT REVIEWS', err);
+      });
   }
 
   /**
@@ -194,6 +197,7 @@ class DBHelper {
   /**
    * Map marker for a restaurant.
    */
+  /* eslint-disable */
   static mapMarkerForRestaurant(restaurant, map) {
     // https://leafletjs.com/reference-1.3.0.html#marker
     const marker = new L.marker(
@@ -209,3 +213,4 @@ class DBHelper {
     return marker;
   }
 }
+/* eslint-disable */
