@@ -20,7 +20,6 @@ const URLS = [
   `${REPO_PREFIX}js/dbHelper.js`,
   `${REPO_PREFIX}js/restaurantInfo.js`,
   `${REPO_PREFIX}css/styles.css`,
-  `${REPO_PREFIX}sass/styles.css`, //!!! REMOVE LATER
   `${REPO_PREFIX}manifest.json`,
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js'
