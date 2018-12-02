@@ -179,11 +179,20 @@ const createRestaurantHTML = restaurant => {
   image.alt = `A photo of ${restaurant.name}`;
   li.append(image);
 
+  const isFavorite = restaurant.is_favorite;
+  const favoriteSign = document.createElement('span');
+  favoriteSign.className = 'favorite-sign-restaurant';
+  if (isFavorite === 'false' || isFavorite === false) {
+    favoriteSign.className += ' hide-favorite';
+  }
+  favoriteSign.innerHTML = '♥';
+
   const name = document.createElement('h3');
   const id = `rest-title-${restaurant.id}`;
   name.className = 'restaurant-title';
   name.id = id;
   name.innerHTML = restaurant.name;
+  name.appendChild(favoriteSign);
   li.append(name);
 
   const neighborhood = document.createElement('p');
@@ -245,7 +254,7 @@ const registerServiceWorker = () => {
         );
       })
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
   }
 };

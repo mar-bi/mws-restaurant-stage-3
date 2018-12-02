@@ -22,6 +22,9 @@
         <li class="breadcrumb-item"><a href="/" class="breadcrumb-link">Home</a></li>
       </ul>
     </nav>
+    <div class="alert-container" id="alert-container" role="alert" aria-atomic="true">
+      <h4 id="connection-alert" class="connection-alert"></h4>
+    </div>
   </header>
 
   <main class="maincontent" role="main">
@@ -29,6 +32,11 @@
 
       <section id="restaurant-container" class="restaurant-container">
         <h2 id="restaurant-name" class="restaurant-name"></h2>
+        <div class="favorite-buttons-container">
+          <button id="make-favorite" class="favorite-button">Make favorite</button>
+          <button id="make-unfavorite" class="favorite-button">Remove favorite</button>
+        </div>
+
         <figure class="restaurant-image-container">
           <img id="restaurant-img" class="restaurant-image">
           <figcaption id="restaurant-cuisine" class="restaurant-cuisine"></figcaption>
@@ -39,6 +47,31 @@
 
       <section id="reviews-container" class="reviews-container">
         <ul id="reviews-list" class="reviews-list"></ul>
+      </section>
+
+      <section class="form-container">
+          <h3 class="user-review-title">Add your review</h3>
+        <form class="user-review-form" id="user-review-form">
+          <label for="username" class="form-label">
+            Your name
+            <input type="text" name="name" class="form-username-input" id="form-name">
+          </label>
+          <label for="user-rating" class="form-label">
+            Rating in <span class="star-icon">★</span>
+            <select name="rating" class="form-rating-select" id="form-rating">
+              <option value="1" class="form-rating-option">1</option>
+              <option value="2" class="form-rating-option">2</option>
+              <option value="3" class="form-rating-option">3</option>
+              <option value="4" class="form-rating-option">4</option>
+              <option value="5" class="form-rating-option">5</option>
+            </select>
+          </label>
+          <label for="user-review" class="form-label">
+            Your review
+            <textarea name="comments" cols="34" rows="10" class="form-usertext" id="form-comments"></textarea>
+          </label>
+          <button class="form-submit">Submit</button>
+        </form>
       </section>
 
     </div>

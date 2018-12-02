@@ -20,6 +20,7 @@ const URLS = [
   `${REPO_PREFIX}js/dbHelper.js`,
   `${REPO_PREFIX}js/restaurantInfo.js`,
   `${REPO_PREFIX}css/styles.css`,
+  `${REPO_PREFIX}manifest.json`,
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.3.1/dist/leaflet.js'
 ];
@@ -49,13 +50,19 @@ self.addEventListener('activate', event => {
   );
 });
 
+self.addEventListener('sync', event => {
+  if (event.tag === 'send-review') {
+    event.waitUntil(sendReviews());
+  }
+});
+
 /**
  * Cache maps, images, and a JSON response from server
  */
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
-  //cache map tiles and markers
+  // cache map tiles and markers
   if (
     requestUrl.origin.startsWith('https://api.tiles.mapbox.com') ||
     requestUrl.pathname.startsWith('/leaflet@1.3.1/dist/images/')
@@ -64,25 +71,55 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  //cache images
+  // cache images
   if (requestUrl.pathname.startsWith(`${REPO_PREFIX}images/`)) {
     event.respondWith(serveImgAssets(contentImagesCache, event.request));
     return;
   }
 
-  //serve a restaurant page
+  // serve a restaurant page
   if (requestUrl.pathname === '/restaurant.html') {
     event.respondWith(
       caches.match('restaurant.html').then(response => {
-        return response || fetch(eventRequest);
+        return response || fetch(event.request);
       })
     );
     return;
   }
 
-  //serve JSON with restaurants data
-  if (requestUrl.host === 'localhost:1337') {
-    event.respondWith(serveJSON(event.request));
+  // serve restaurants data
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname === '/restaurants'
+  ) {
+    event.respondWith(serveRestaurants(event.request, 'restaurants-data'));
+    return;
+  }
+
+  // serve & add reviews
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname.startsWith('/reviews')
+  ) {
+    if (event.request.method === 'GET') {
+      const id = requestUrl.searchParams.get('restaurant_id');
+      event.respondWith(serveReviews(event.request, 'reviews-data', id));
+      return;
+    }
+
+    if (event.request.method === 'POST') {
+      event.respondWith(addReview(event.request));
+      return;
+    }
+  }
+
+  // update favorite restaurants
+  if (
+    requestUrl.host === 'localhost:1337' &&
+    requestUrl.pathname.startsWith('/restaurants') &&
+    event.request.method === 'PUT'
+  ) {
+    event.respondWith(updateFavorite(event.request));
     return;
   }
 
@@ -112,61 +149,223 @@ function serveImgAssets(cacheName, eventRequest) {
     return cache.match(eventRequest).then(response => {
       return (
         response ||
-        fetch(eventRequest).then(response => {
-          cache.put(eventRequest, response.clone());
-          return response;
-        })
+        fetch(eventRequest)
+          .then(response => {
+            cache.put(eventRequest, response.clone());
+            return response;
+          })
+          .catch(err => {
+            console.error('ERROR IN SERVING IMG ASSETS', err);
+          })
       );
     });
   });
 }
 
+// -------- IndexedDB manipulation functions ----------------------
+
 function createAppDB() {
   return (DBPromise = idb.open('mws-restaurants', 1, function(upgradeDB) {
-    upgradeDB.createObjectStore('all-restaurants', { keyPath: 'id' });
+    upgradeDB.createObjectStore('restaurants-data', { keyPath: 'id' });
+    upgradeDB.createObjectStore('reviews-data');
+    upgradeDB.createObjectStore('offline-reviews');
   }));
 }
 
-function writeAppDB(dataObj) {
+function writeAppDB(dataObj, objStore) {
   DBPromise.then(db => {
-    const tx = db.transaction('all-restaurants', 'readwrite');
-    const store = tx.objectStore('all-restaurants');
-    store.put({
-      id: 1,
-      data: dataObj
-    });
+    const tx = db.transaction(objStore, 'readwrite');
+    const store = tx.objectStore(objStore);
+    if (objStore === 'reviews-data') {
+      const key = dataObj[0].restaurant_id;
+      store.put(dataObj, key);
+    } else {
+      dataObj.forEach(item => {
+        store.put(item);
+      });
+    }
     return tx.complete;
   }).catch(err => console.log(err));
 }
 
-function readAppDB() {
+function readAllFromDB(objStore) {
+  if (!DBPromise) {
+    DBPromise = idb.open('mws-restaurants', 1, () => {
+      console.log('DBPromise is created');
+    });
+  }
+
   return DBPromise.then(db => {
     return db
-      .transaction('all-restaurants')
-      .objectStore('all-restaurants')
+      .transaction(objStore)
+      .objectStore(objStore)
       .getAll();
   });
 }
 
-async function serveJSON(eventRequest) {
-  const dbData = await readAppDB();
-  const restaurants = dbData.length === 0 ? null : dbData[0].data;
-  let fetchResponse;
+function readByIdFromDB(objStore, id) {
+  return DBPromise.then(async db => {
+    const tx = db.transaction(objStore);
+    const store = tx.objectStore(objStore);
+    const review = await store.get(Number.parseInt(id));
+    // console.log('REVIEW FROM IDB', review);
+    return review;
+  });
+}
 
-  if (restaurants) {
-    console.log('restaurants from db', restaurants);
-    return wrapIntoResponse(restaurants);
-  }
+function removeFromDb(objectStore, id) {
+  return DBPromise.then(db => {
+    const tx = db.transaction(objectStore, 'readwrite');
+    tx.objectStore(objectStore).delete(id);
+    return tx.complete;
+  });
+}
 
+function updateRestaurant(restaurant) {
+  DBPromise.then(db => {
+    const tx = db.transaction('restaurants-data', 'readwrite');
+    const store = tx.objectStore('restaurants-data');
+    store.put(restaurant);
+    return tx.complete;
+  }).catch(err => console.error(err));
+}
+
+function updateReviews(review) {
+  return DBPromise.then(async db => {
+    const tx = db.transaction('reviews-data', 'readwrite');
+    const reviewStore = tx.objectStore('reviews-data');
+    const key = review.restaurant_id;
+    const reviews = await reviewStore.get(key);
+    const _reviews = [...reviews, review];
+    reviewStore.put(_reviews, key);
+    return tx.complete;
+  });
+}
+
+function addOfflineReview(review) {
+  return DBPromise.then(db => {
+    const tx = db.transaction('offline-reviews', 'readwrite');
+    const tempStore = tx.objectStore('offline-reviews');
+    const id = review.id;
+    tempStore.put(review, id);
+    return tx.complete;
+  });
+}
+
+// -------------------Helper functions ------------------------
+
+async function serveRestaurants(eventRequest, objectStore) {
   try {
+    const dbData = await readAllFromDB(objectStore);
+    const restaurants = dbData.length === 0 ? null : dbData;
+    let fetchResponse;
+
+    if (restaurants) {
+      // console.log('restaurants from db', restaurants);
+      return wrapIntoResponse(restaurants);
+    }
+
     fetchResponse = await fetch(eventRequest);
     const jsonResponse = await fetchResponse.clone().json();
-    writeAppDB(jsonResponse);
+    writeAppDB(jsonResponse, objectStore);
 
     return fetchResponse;
   } catch (err) {
-    console.log('Fetch error: ', err);
+    console.error('ERROR IN SERVE RESTAURANTS', err);
   }
+}
+
+async function serveReviews(eventRequest, objectStore, id) {
+  try {
+    const dbData = await readByIdFromDB(objectStore, id);
+    // console.log('Reviews data', dbData);
+    const reviews = dbData && dbData.length === 0 ? null : dbData;
+
+    let fetchResponse;
+
+    if (reviews) {
+      // console.log('restaurants from db', reviews);
+      return wrapIntoResponse(reviews);
+    }
+
+    fetchResponse = await fetch(eventRequest);
+    const jsonResponse = await fetchResponse.clone().json();
+    writeAppDB(jsonResponse, objectStore);
+
+    return fetchResponse;
+  } catch (err) {
+    console.error('ERROR IN SERVE REVIEWS', err);
+  }
+}
+
+async function updateFavorite(eventRequest) {
+  try {
+    const response = await fetch(eventRequest);
+    const jsonResponse = await response.clone().json();
+    updateRestaurant(jsonResponse);
+    return response;
+  } catch (err) {
+    console.error('ERROR IN UPDATE FAVORITE', err);
+  }
+}
+
+async function addReview(eventRequest) {
+  const isOnline = navigator.onLine;
+  try {
+    const review = await eventRequest.json();
+    await updateReviews(review);
+    await addOfflineReview(review);
+
+    if (!isOnline) {
+      // send message to clients
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client =>
+          client.postMessage({
+            msg: 'You are offline now! All your reviews will be sent later.'
+          })
+        );
+      });
+    }
+    self.registration.sync.register('send-review').then(() => {
+      console.log('send-review sync is registered');
+    });
+    return wrapIntoResponse(review);
+  } catch (err) {
+    console.error('ERROR IN ADD REVIEW', err);
+  }
+}
+
+async function sendReviews() {
+  let dbData;
+  try {
+    dbData = await readAllFromDB('offline-reviews');
+    // console.log('Sending reviews', dbData);
+  } catch (err) {
+    console.error('ERROR IN READING REVIEWS FROM DB', err);
+  }
+
+  if (dbData && dbData.length > 0) {
+    const url = 'http://localhost:1337/reviews/';
+    dbData.forEach(review => {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify(review)
+      })
+        .then(response => {
+          // console.log('Server.response', response.json());
+          return removeFromDb('offline-reviews', review.id);
+        })
+        .then(result => result)
+        .catch(err => {
+          console.error('ERROR IN SEND REVIEWS', err);
+          return Promise.reject();
+        });
+    });
+  }
+  return Promise.resolve();
 }
 
 function wrapIntoResponse(dbObject) {

@@ -8,6 +8,8 @@ $orange_title: #c75000;
 $white_background: #f3f3f3;
 $gray_80: #ccc;
 $white: #fff;
+$alert: #A80000;
+$favorite_sign:#185D8C;
 
 //sizes
 $max_width: 1024px;
@@ -390,12 +392,14 @@ section {
 /* =================== Restaurant Details ==================== */
 .restaurant-container {
   box-sizing: border-box;
+  display: flex;
+  flex-flow: column nowrap;
   border-bottom: 1px solid #d9d9d9;
   border-top: 1px solid $white;
-  padding: 140px 24px 30px;
+  padding: 175px 24px 30px;
   width: 100%;
   @media screen and (min-width: 400px) {
-    padding: 140px 32px 30px;
+    padding: 175px 32px 30px;
   }
 }
 
@@ -404,7 +408,7 @@ section {
   font: 1.625em/1.1 Arial, sans-serif;
   font-weight: 200;
   letter-spacing: 0;
-  margin: 15px 0 30px;
+  margin: 15px 0 20px;
   text-transform: uppercase;
 }
 
@@ -508,4 +512,122 @@ section {
   &:nth-of-type(3) {
     font-weight: 600;
   }
+}
+
+/*===========================User Reviews======================*/
+.form-container {
+  @extend .reviews-container;
+  margin-bottom: 4.45em;
+}
+
+.user-review-title {
+  @extend .reviews-title;
+  margin-bottom: 0.25em;
+}
+
+.user-review-form {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: flex-start;
+  padding: 1em;
+}
+
+.form-label {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+
+.form-username-input {
+  display: block;
+  width: 95%;
+  border: 1px solid lighten($orange_title, 15%);
+  border-radius: 2px;
+  font: 16px/1.5 Arial, Helvetica, sans-serif;
+  color: $text_color;
+  font-size: 1em;
+  padding: 0.5em;
+  margin: 0.25em 0;
+  &:focus {
+    outline: 2px dotted $blue;
+    box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.form-rating-select {
+  @extend .form-username-input;
+  width: 45%;
+  background-color: $white;
+}
+
+.form-rating-option {
+  @extend .filter-select-option;
+}
+
+.form-usertext {
+  @extend .form-username-input;
+}
+
+.star-icon {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.form-submit {
+  @extend .restaurant-link;
+  width: 50%;
+  align-self: center;
+}
+
+/* Favorite buttons & sign */
+.favorite-buttons-container {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+}
+
+.favorite-button {
+  min-width: 125px;
+  border: 2px solid lighten($orange_title, 15%);
+  border-radius: 3px;
+  background-color: $white_background;
+  color: $text_color;
+  font-size: 0.9em;
+  padding: 0.5em;
+  margin-right: 1em;
+  align-self: center;
+  transition: all 2s;
+  &:hover, &:active {
+    border-color: $blue;
+    color: $orange_title;
+  }
+  &:focus {
+    outline: 2px dotted $blue;
+    box-shadow: 0 0 3px 8px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.favorite-sign-restaurant {
+  color: $favorite_sign;
+  font-size: 0.95em;
+  vertical-align: super;
+}
+
+.hide-favorite {
+  display: none;
+}
+
+.alert-container {
+  @extend .nav-breadcrumb;
+}
+
+.show-alert {
+  background-color: $alert;
+}
+
+.connection-alert {
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  margin: 1em 0;
+  padding: 0.25em;
 }

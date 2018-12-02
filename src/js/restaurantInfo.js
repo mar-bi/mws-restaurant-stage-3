@@ -1,4 +1,4 @@
-let restaurant;
+let restaurant; // eslint-disable-line
 var newMap;
 
 /**
@@ -7,11 +7,16 @@ var newMap;
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   initRestaurantMap();
+  addMessageListener();
+  addFormSubmitListener();
+  addFavoriteListener();
+  addRemoveFavoriteListener();
 });
 
 /**
  * Initialize leaflet map
  */
+/* eslint-disable */
 const initRestaurantMap = () => {
   fetchRestaurantFromURL((error, restaurant) => {
     if (error) {
@@ -41,7 +46,7 @@ const initRestaurantMap = () => {
     }
   });
 };
-
+/* eslint-enable */
 
 /**
  * Get current restaurant from page URL.
@@ -58,15 +63,20 @@ const fetchRestaurantFromURL = callback => {
     const error = 'No restaurant id in URL';
     callback(error, null);
   } else {
-    DBHelper.fetchRestaurantById(id, (error, restaurant) => {
-      self.restaurant = restaurant;
-      if (!restaurant) {
-        console.error(error);
-        return;
-      }
-      fillRestaurantHTML();
-      callback(null, restaurant);
-    });
+    Promise.all([
+      DBHelper.fetchRestaurantById(id), // eslint-disable-line
+      DBHelper.fetchRestaurantReviews(id) // eslint-disable-line
+    ])
+      .then(res => {
+        const [restaurant, reviews] = res;
+        restaurant.reviews = Array.isArray(reviews) ? reviews : [];
+        self.restaurant = restaurant || {};
+        fillRestaurantHTML();
+        callback(null, restaurant);
+      })
+      .catch(err => {
+        console.error(err);
+      });
   }
 };
 
@@ -74,16 +84,26 @@ const fetchRestaurantFromURL = callback => {
  * Create restaurant HTML and add it to the webpage
  */
 const fillRestaurantHTML = (restaurant = self.restaurant) => {
+  const isFavorite = restaurant.is_favorite;
+  const favoriteSign = document.createElement('span');
+  favoriteSign.className = 'favorite-sign-restaurant';
+  if (isFavorite === 'false' || isFavorite === false) {
+    favoriteSign.className += ' hide-favorite';
+  }
+  favoriteSign.setAttribute('id', `fav-icon-${restaurant.id}`);
+  favoriteSign.innerHTML = '♥';
+
   const name = document.getElementById('restaurant-name');
   name.innerHTML = restaurant.name;
+  name.appendChild(favoriteSign);
 
   const address = document.getElementById('restaurant-address');
   address.innerHTML = restaurant.address;
 
   const image = document.getElementById('restaurant-img');
-  image.srcset = DBHelper.imageSrcsetWForRestaurant(restaurant);
+  image.srcset = DBHelper.imageSrcsetWForRestaurant(restaurant); // eslint-disable-line
   image.sizes = '(max-width: 699px) 270px, 400px';
-  image.src = DBHelper.imageUrlForRestaurant(restaurant);
+  image.src = DBHelper.imageUrlForRestaurant(restaurant); // eslint-disable-line
   image.alt = `A photo of ${restaurant.name}`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
@@ -158,7 +178,7 @@ const createReviewHTML = review => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  date.innerHTML = formatDate(review.updatedAt);
   date.className = 'reviews-text';
   li.appendChild(date);
 
@@ -197,7 +217,7 @@ const fillBreadcrumb = (restaurant = self.restaurant) => {
  */
 const getParameterByName = (name, url) => {
   if (!url) url = window.location.href;
-  name = name.replace(/[\[\]]/g, '\\$&');
+  name = name.replace(/[\[\]]/g, '\\$&'); // eslint-disable-line
   const regex = new RegExp(`[?&]${name}(=([^&#]*)|&|#|$)`),
     results = regex.exec(url);
   if (!results) return null;
@@ -218,7 +238,170 @@ const registerServiceWorker = () => {
         );
       })
       .catch(err => {
-        console.log(err);
+        console.error(err);
       });
   }
+};
+
+/**
+ *  Format timestamp into human-readable date
+ */
+const formatDate = timestamp => {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
+  const date = new Date(timestamp);
+  const day = date.getDate();
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  return `${months[month]} ${day}, ${year}`;
+};
+
+/**
+ * Add user review to the restaurant page
+ */
+const addUserReview = review => {
+  const ul = document.getElementById('reviews-list');
+  ul.appendChild(createReviewHTML(review));
+};
+
+/**
+ * Submit a new restaurant review
+ */
+const submitNewReview = event => {
+  event.preventDefault();
+  const nameInput = document.querySelector('#form-name');
+  const ratingInput = document.querySelector('#form-rating');
+  const commentsInput = document.querySelector('#form-comments');
+  const payload = {
+    restaurant_id: self.restaurant.id,
+    name: nameInput.value.trim(),
+    rating: Number(ratingInput.value),
+    comments: commentsInput.value.trim(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    id: Math.round(Math.random() * 1000)
+  };
+
+  if (payload.name && payload.rating && payload.comments) {
+    const url = 'http://localhost:1337/reviews/';
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(response => {
+        // console.log('server response', response);
+        addUserReview(response);
+        nameInput.value = '';
+        ratingInput.value = 1;
+        commentsInput.value = '';
+      })
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
+ * Toggle a favorite icon after the restaurant name
+ */
+const toggleFavIcon = (id, actionString) => {
+  const favSpan = document.querySelector(`#fav-icon-${id}`);
+  return actionString === 'show'
+    ? favSpan.classList.remove('hide-favorite')
+    : favSpan.classList.add('hide-favorite');
+};
+
+/**
+ * Make restaurant favorite
+ */
+const makeFavorite = (event, restaurant = self.restaurant) => {
+  const { id } = restaurant;
+  if (id) {
+    const url = `http://localhost:1337/restaurants/${id}/?is_favorite=true`;
+    fetch(url, { method: 'PUT' })
+      .then(res => res.json())
+      .then(response => {
+        const { id } = response;
+        toggleFavIcon(id, 'show');
+      })
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
+ * Make restaurant un-favorite
+ */
+const removeFavorite = (event, restaurant = self.restaurant) => {
+  const { id } = restaurant;
+  if (id) {
+    const url = `http://localhost:1337/restaurants/${id}/?is_favorite=false`;
+    fetch(url, { method: 'PUT' })
+      .then(res => res.json())
+      .then(response => {
+        const { id } = response;
+        toggleFavIcon(id, 'hide');
+      })
+      .catch(error => console.error('Error:', error));
+  }
+};
+
+/**
+ * Listen for the review form submission
+ */
+const addFormSubmitListener = () => {
+  const reviewForm = document.querySelector('#user-review-form');
+  reviewForm.addEventListener('submit', submitNewReview);
+};
+
+/**
+ * Listen for click on a favorite button
+ */
+const addFavoriteListener = () => {
+  const favButton = document.querySelector('#make-favorite');
+  favButton.addEventListener('click', makeFavorite);
+};
+
+/**
+ * Listen for click on an un-favorite button
+ */
+const addRemoveFavoriteListener = () => {
+  const unfavButton = document.querySelector('#make-unfavorite');
+  unfavButton.addEventListener('click', removeFavorite);
+};
+
+/**
+ * Notify user about connection status
+ */
+const notifyUserAboutConnection = message => {
+  const connectionStatus = document.querySelector('#connection-alert');
+  const alertContainer = document.querySelector('#alert-container');
+  connectionStatus.innerHTML = message;
+  alertContainer.classList.add('show-alert');
+  setTimeout(() => {
+    connectionStatus.innerHTML = '';
+    alertContainer.classList.remove('show-alert');
+  }, 4000);
+};
+
+/**
+ * Listen for a message from a service worker
+ */
+const addMessageListener = () => {
+  navigator.serviceWorker.addEventListener('message', event => {
+    notifyUserAboutConnection(event.data.msg);
+  });
 };
