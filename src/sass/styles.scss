@@ -9,6 +9,7 @@ $white_background: #f3f3f3;
 $gray_80: #ccc;
 $white: #fff;
 $alert: #A80000;
+$favorite_sign:#185D8C;
 
 //sizes
 $max_width: 1024px;
@@ -606,7 +607,7 @@ section {
 }
 
 .favorite-sign-restaurant {
-  color: $blue;
+  color: $favorite_sign;
   font-size: 0.95em;
   vertical-align: super;
 }
