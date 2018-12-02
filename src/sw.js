@@ -162,7 +162,7 @@ function serveImgAssets(cacheName, eventRequest) {
   });
 }
 
-// -------- IndexedDB manipulation methods ----------------------
+// -------- IndexedDB manipulation functions ----------------------
 
 function createAppDB() {
   return (DBPromise = idb.open('mws-restaurants', 1, function(upgradeDB) {
