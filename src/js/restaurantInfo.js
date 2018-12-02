@@ -6,7 +6,6 @@ var newMap;
  */
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
-  // registerServiceWorkerSync();
   initRestaurantMap();
   addMessageListener();
   addFormSubmitListener();
@@ -344,7 +343,7 @@ const makeFavorite = (event, restaurant = self.restaurant) => {
 };
 
 /**
- * Make restaurant favorite
+ * Make restaurant un-favorite
  */
 const removeFavorite = (event, restaurant = self.restaurant) => {
   const { id } = restaurant;
@@ -377,7 +376,7 @@ const addFavoriteListener = () => {
 };
 
 /**
- * Listen for click on an unfavorite button
+ * Listen for click on an un-favorite button
  */
 const addRemoveFavoriteListener = () => {
   const unfavButton = document.querySelector('#make-unfavorite');
