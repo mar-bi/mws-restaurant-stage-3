@@ -189,6 +189,12 @@ function writeAppDB(dataObj, objStore) {
 }
 
 function readAllFromDB(objStore) {
+  if (!DBPromise) {
+    DBPromise = idb.open('mws-restaurants', 1, () => {
+      console.log('DBPromise is created');
+    });
+  }
+
   return DBPromise.then(db => {
     return db
       .transaction(objStore)
